@@ -1,6 +1,6 @@
 #!/usr/local/bin/bash
 # only bash has $RANDOM!
-gcc main.c -O3 -o sumaker
+make sumaker
 ./sumaker 4 2 4  $RANDOM | lp
 ./sumaker 4 2 8  $RANDOM | lp
 ./sumaker 6 3 12  $RANDOM | lp

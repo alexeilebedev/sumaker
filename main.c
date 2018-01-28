@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <assert.h>
 #include <memory.h>
+#include <time.h>
 #include <unistd.h>
 
 /* sudoku board generator 
@@ -9,18 +10,19 @@
 
 // data structure for the board
 struct board {
-  int size;
+  int size;// boards are square
   int seed;
-  int nerase;
-  int xchunk;
-  int *cells;
-  int valid;
+  int nerase;// number of squares to be erased
+  int xchunk;// size of each block in X direction (y direction is just size/xchunk) 
+  int *cells;// pointer to row-major array of cells 
+  int valid;// successfully generated?
 };
 
 int imin(int x, int y) {
   return x<y ? x:y;
 }
 
+// create a new empty board with specified parameters
 struct board *board_create(int size, int xchunk, int nerase, int seed) {
   struct board *ret = (struct board*)malloc(sizeof(struct board));
   ret->size=size;
@@ -32,17 +34,20 @@ struct board *board_create(int size, int xchunk, int nerase, int seed) {
   return ret;
 }
 
+// delete a board
 void board_delete(struct board *board) {
   free(board->cells);
   free(board);
 }
 
+// retrieve value of cell X,Y. no bounds checking
 int board_get(struct board *board, int x, int y) {
   assert((unsigned)(x)<(unsigned)(board->size));
   assert((unsigned)(y)<(unsigned)(board->size));
   return board->cells[y * board->size + x];
 }
 
+// Calculate value of y chunk (height of each subblock)
 int ychunk(struct board *board) {
   return board->size / board->xchunk;
 }
@@ -51,12 +56,16 @@ int xchunk(struct board *board) {
   return board->xchunk;
 }
 
+// Set cell X,Y to VAL. no bounds checking
 void board_set(struct board *board, int x, int y, int val) {
   assert((unsigned)(x)<(unsigned)(board->size));
   assert((unsigned)(y)<(unsigned)(board->size));
   board->cells[y * board->size + x] = val;
 }
 
+// Calculate whether storing VAL at location NEWX,NEWY is valid.
+// Consider it valid if location is the same as X,Y. 
+// If collision is found, set BADX,BADY to NEWX,NEWY
 int collision(struct board *board, int x, int y, int val, int newx, int newy, int *badx, int *bady) {
   int ret=0;
   if (!(x==newx && y==newy) && board_get(board,newx,newy) == val) {
@@ -67,6 +76,8 @@ int collision(struct board *board, int x, int y, int val, int newx, int newy, in
   return ret;
 }
 
+// Calculate whether it's valid to store VAL at location X,Y
+// If not, populate BADX,BADY with coordinate of conflicting cell
 int valid_val(struct board *board, int x, int y, int val, int *badx, int *bady) {
   int ret=1;
   int left= x - x%xchunk(board);
@@ -97,6 +108,7 @@ int valid_val(struct board *board, int x, int y, int val, int *badx, int *bady) 
   return ret;
 }
 
+// Swap two digits on a board (part of shuffling)
 void board_swap_val(struct board *board, int dig1, int dig2) {
   for (int y=0; y<board->size; y++) {
     for (int x=0; x<board->size; x++) {
@@ -109,6 +121,7 @@ void board_swap_val(struct board *board, int dig1, int dig2) {
   }
 }
 
+// Swap two columns
 void board_swap_col(struct board *board, int x1, int x2) {
   for (int y=0; y<board->size; y++) {
     int val1=board_get(board,x1,y);
@@ -118,6 +131,7 @@ void board_swap_col(struct board *board, int x1, int x2) {
   }
 }
 
+// Swap two rows
 void board_swap_row(struct board *board, int y1, int y2) {
   for (int x=0; x<board->size; x++) {
     int val1=board_get(board,x,y1);
@@ -126,6 +140,8 @@ void board_swap_row(struct board *board, int y1, int y2) {
     board_set(board,x,y2,val1);
   }
 }
+
+// Check if a board contains a valid Sudoku solution.
 void board_check(struct board *board) {
   for (int x=0; x<board->size; x++) {
     for (int y=0; y<board->size; y++) {
@@ -138,6 +154,7 @@ void board_check(struct board *board) {
   }
 }
 
+// Perform erasure of random cells
 void board_erase(struct board *board) {
   int nerase=0;
   nerase=board->nerase;
@@ -154,6 +171,8 @@ void board_erase(struct board *board) {
   }
 }
 
+// Generate a new board:
+// Start with a standard configuration; perform shuffles; erase cells
 void board_generate(struct board *board) {
   board->valid=1;
   srand(board->seed);
@@ -178,11 +197,14 @@ void board_generate(struct board *board) {
   board_erase(board);
 }
 
+// Draw line from XFROM,YFROM to XTO,YTO
 void ps_lineto(float xfrom, float yfrom, float xto, float yto) {
   printf("newpath %f %f moveto %f %f lineto closepath stroke\n"
 	 ,xfrom,yfrom,xto,yto);
 }
 
+// Generate a PostScript program for showing BOARD
+// on a single page
 void board_ps(struct board *board) {
   int size = board->size;
   int xmod = xchunk(board);
@@ -229,11 +251,13 @@ void board_ps(struct board *board) {
   printf("showpage\n");
 }
 
+// main function
+// pipe output to lp to print!  
 int main(int argc, char **argv) {
   int size =argc >1 ? atoi(argv[1]) : 9;
   int xchunk=argc >2 ? atoi(argv[2]) : 3;
   int nerase=argc >3 ? atoi(argv[3]) : 20;
-  int seed  =argc >4 ? atoi(argv[4]) : 0;
+  int seed  =argc >4 ? atoi(argv[4]) : time(0);
   struct board *board = board_create(size,xchunk,nerase,seed);
   if (size % xchunk != 0) {
     fprintf(stderr,"bad xchunk specified\n");
