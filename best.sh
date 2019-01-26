@@ -1,5 +1,4 @@
 #!/usr/local/bin/bash
-# only bash has $RANDOM!
 make sumaker
 ./sumaker 4 2 4  $RANDOM | lp
 ./sumaker 4 2 8  $RANDOM | lp
