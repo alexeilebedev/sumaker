@@ -15,8 +15,7 @@ for instance you can create 6x6 sudokus with 3x2 bricks with
 ./sumaker 6 3 1
 
 At high board sizes (e.g. 81), even solving for 1 missing square becomes a challenge,
-because once your short-term memory is blown, searching for a missing square becomes
-hard.... So suggests a new game:
+Which suggests a new game:
 
 The missing number.
 Use
@@ -26,6 +25,7 @@ make missingnum
 ./missingnum 10
 ~~~
 
-This again generate a postscript page which you can print.
-The game is simply to find one missing number. A simple strategy might be to linearly
-scan the board for each number, starting at 1 (hint: better one exist).
+to generate a postscript page which you can print.
+The object of the game is simply to find one missing number.
+One strategy might be to linearly scan the board for each number,
+starting at 1 (hint: better one exist).
